@@ -24,6 +24,31 @@ fn main() {
     let genesis_block: Block = create_genesis_block();
     println!("Genesis Block: {:#?}", genesis_block);
     blockchain.push(genesis_block);
+
+    blockchain.push(create_block(&blockchain, "Transaction Info".to_string()));
+    blockchain.push(create_block(&blockchain, "Hello World".to_string()));
+    blockchain.push(create_block(&blockchain, "Cool data".to_string()));
+    blockchain.push(create_block(&blockchain, "Rust the best".to_string()));
+    blockchain.push(create_block(&blockchain, "blockchain-simulator".to_string()));
+}
+
+fn create_block(blockchain: &Vec<Block>, data: String) -> Block {    
+    let mut block = Block {
+        index: blockchain.len() as u128,
+        data,
+        hash: String::new(),
+        previous: blockchain[blockchain.len() - 1].hash.clone(),
+        nonce: 0,
+        timestamp: Utc::now()
+    };
+
+    let nonce_hash = find_nonce(&block);
+    block.nonce = nonce_hash.0;
+    block.hash = nonce_hash.1;
+
+    println!("Block: {:#?}", block);
+
+    block
 }
 
 fn create_genesis_block() -> Block {
