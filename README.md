@@ -89,4 +89,4 @@ This project uses:
 * Add a web interface to visualize the chain
 
 # License
-This project is licensed under the MIT License.
+This project is licensed under the MIT License (Non-Commercial).
