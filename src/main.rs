@@ -14,10 +14,7 @@ struct Block {
 fn main() {
     let mut blockchain: Vec<Block> = Vec::new();
 
-    let genesis_block: Block = create_genesis_block();
-    println!("Genesis {:#?}", genesis_block);
-    blockchain.push(genesis_block);
-
+    blockchain.push(create_block(&blockchain, "Genesis Block".to_string()));
     blockchain.push(create_block(&blockchain, "Transaction Info".to_string()));
     blockchain.push(create_block(&blockchain, "Hello World".to_string()));
     blockchain.push(create_block(&blockchain, "Cool data".to_string()));
@@ -25,14 +22,30 @@ fn main() {
     blockchain.push(create_block(&blockchain, "blockchain-simulator".to_string()));
 
     println!("Valid blockchain: {}", is_blockchain_valid(&blockchain));
+
+    println!("{:#?}", blockchain);
 }
 
 fn create_block(blockchain: &[Block], data: String) -> Block {    
+    let previous_hash = if blockchain.is_empty() {
+        "0".repeat(64)
+    } else {
+        blockchain[blockchain.len() - 1].hash.clone()
+    };
+
+    initialize_block(
+        blockchain.len() as u128,
+        data,
+        previous_hash
+    )
+}
+
+fn initialize_block(index: u128, data: String, previous: String) -> Block {
     let mut block = Block {
-        index: blockchain.len() as u128,
+        index,
         data,
         hash: String::new(),
-        previous: blockchain[blockchain.len() - 1].hash.clone(),
+        previous,
         nonce: 0,
         timestamp: Utc::now()
     };
@@ -41,26 +54,7 @@ fn create_block(blockchain: &[Block], data: String) -> Block {
     block.nonce = nonce_hash.0;
     block.hash = nonce_hash.1;
 
-    // println!("{:#?}", block);
-
     block
-}
-
-fn create_genesis_block() -> Block {
-    let mut genesis_block = Block {
-        index: 0,
-        data: String::from("Genesis Block"),
-        hash: String::new(),
-        previous: "0".repeat(64),
-        nonce: 0,
-        timestamp: Utc::now()
-    };
-
-    let nonce_hash = find_nonce(&genesis_block);
-    genesis_block.nonce = nonce_hash.0;
-    genesis_block.hash = nonce_hash.1;
-
-    genesis_block
 }
 
 fn hash(input: &str) -> String {
