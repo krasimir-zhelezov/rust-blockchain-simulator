@@ -12,6 +12,8 @@ This is a simple blockchain simulator written in Rust. It demonstrates how block
 
 * Logs all block data in a human-readable format
 
+* Block validation
+
 ## How It Works
 Each block contains:
 
@@ -80,7 +82,7 @@ This project uses:
 * sha2 for SHA-256 hashing
 
 # Possible Extensions
-* Add block validation
+* ~~Add block validation~~
 
 * Store blockchain to a file
 
