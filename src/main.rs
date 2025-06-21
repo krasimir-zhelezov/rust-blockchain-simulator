@@ -23,6 +23,8 @@ fn main() {
     blockchain.push(create_block(&blockchain, "Cool data".to_string()));
     blockchain.push(create_block(&blockchain, "Rust the best".to_string()));
     blockchain.push(create_block(&blockchain, "blockchain-simulator".to_string()));
+
+    validate_blockchain(&blockchain);
 }
 
 fn create_block(blockchain: &[Block], data: String) -> Block {    
@@ -39,7 +41,7 @@ fn create_block(blockchain: &[Block], data: String) -> Block {
     block.nonce = nonce_hash.0;
     block.hash = nonce_hash.1;
 
-    println!("{:#?}", block);
+    // println!("{:#?}", block);
 
     block
 }
@@ -87,4 +89,24 @@ fn find_nonce(block: &Block) -> (u64, String) {
     }
 
     (nonce, hash_string)
+}
+
+fn validate_blockchain(blockchain: &[Block]) {
+    let mut previous_block_hash: String = String::new();
+
+    for block in blockchain {
+        // println!("{:#?}", block);
+        if block.index == 0 {
+            previous_block_hash = block.hash.clone();
+            continue;
+        }
+
+        if block.previous == previous_block_hash {
+            println!("Block {} is valid", block.index);
+            previous_block_hash = block.hash.clone();
+        } else {
+            println!("Block {} is invalid", block.index);
+            break;
+        }
+    }
 }
