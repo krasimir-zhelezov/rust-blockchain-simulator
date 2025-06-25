@@ -1,7 +1,22 @@
+use axum::routing::post;
+use axum::Router;
 use chrono::{DateTime, Utc};
+use rocket::tokio;
 use sha2::{Sha256, Digest};
+use axum::{
+    routing::get,
+    Json
+};
+use hyper::server;
+use serde::{Deserialize, Serialize};
+use utoipa::{ToSchema, OpenApi};
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
+use utoipa_swagger_ui::SwaggerUi;
+use utoipa::Modify;
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Block {
     index: u128,
     data: String,
@@ -11,34 +26,80 @@ struct Block {
     timestamp: DateTime<Utc>
 }
 
-fn main() {
-    let mut blockchain: Vec<Block> = Vec::new();
-
-    blockchain.push(create_block(&blockchain, "Genesis Block".to_string()));
-    blockchain.push(create_block(&blockchain, "Transaction Info".to_string()));
-    blockchain.push(create_block(&blockchain, "Hello World".to_string()));
-    blockchain.push(create_block(&blockchain, "Cool data".to_string()));
-    blockchain.push(create_block(&blockchain, "Rust the best".to_string()));
-    blockchain.push(create_block(&blockchain, "blockchain-simulator".to_string()));
-
-    println!("Valid blockchain: {}", is_blockchain_valid(&blockchain));
-
-    println!("{:#?}", blockchain);
+#[derive(Deserialize, ToSchema)]
+pub struct CreateBlockRequest {
+    // Your fields here, for example:
+    data: String,
 }
 
-fn create_block(blockchain: &[Block], data: String) -> Block {    
+#[derive(OpenApi)]
+#[openapi(
+    paths(create_block, get_blockchain),
+    components(schemas(CreateBlockRequest))
+)]
+struct ApiDoc;
+
+static BLOCKCHAIN: Lazy<Mutex<Vec<Block>>> = Lazy::new(|| Mutex::new(Vec::new()));
+
+#[utoipa::path(
+    post,
+    path = "/api/blockchain",
+    request_body=CreateBlockRequest
+)]
+async fn create_block(Json(payload): Json<CreateBlockRequest>) -> Json<Block> {
+    let mut blockchain = BLOCKCHAIN.lock().unwrap();
+
     let previous_hash = if blockchain.is_empty() {
         "0".repeat(64)
     } else {
         blockchain[blockchain.len() - 1].hash.clone()
     };
 
-    initialize_block(
+    let new_block = initialize_block(
         blockchain.len() as u128,
-        data,
+        payload.data,
         previous_hash
-    )
+    );
+
+    blockchain.push(new_block.clone());
+
+    Json(new_block)
 }
+
+#[utoipa::path(
+    get,
+    path="/api/blockchain"
+)]
+async fn get_blockchain() -> Json<Vec<Block>> {
+    let blockchain = BLOCKCHAIN.lock().unwrap();
+    Json(blockchain.clone())
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .route("/api/blockchain", post(create_block))
+        .route("/api/blockchain", get(get_blockchain))
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()));
+
+    // run our app with hyper, listening globally on port 3000
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
+
+// fn create_block(blockchain: &[Block], data: String) -> Block {    
+//     let previous_hash = if blockchain.is_empty() {
+//         "0".repeat(64)
+//     } else {
+//         blockchain[blockchain.len() - 1].hash.clone()
+//     };
+
+//     initialize_block(
+//         blockchain.len() as u128,
+//         data,
+//         previous_hash
+//     )
+// }
 
 fn initialize_block(index: u128, data: String, previous: String) -> Block {
     let mut block = Block {
