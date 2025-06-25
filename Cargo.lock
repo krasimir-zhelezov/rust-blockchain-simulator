@@ -219,6 +219,7 @@ dependencies = [
  "schemars 1.0.1",
  "serde",
  "sha2",
+ "tokio",
  "utoipa",
  "utoipa-axum",
  "utoipa-swagger-ui",
